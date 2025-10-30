@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>La Bajada</title>
+    
+    <!-- Meta PWA: Color de la barra de título del navegador --><meta name="theme-color" content="#1f2937">
+    <!-- Meta PWA: Enlace al Manifest --><link rel="manifest" href="manifest.json">
+
     <!-- Importa Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Fuente Inter de Google Fonts */
@@ -24,9 +28,12 @@
 <body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
-        <!-- Título de la APP --><h1 class="text-3xl md:text-5xl font-bold text-center mb-8 text-white">
+        <!-- Título de la APP --><h1 class="text-3xl md:text-5xl font-bold text-center mb-4 text-white">
             La Bajada
         </h1>
+        <!-- Logo de la APP --><div class="flex justify-center mb-8">
+            <img src="logo.png" alt="Logo de La Bajada" class="h-24 md:h-32 w-auto">
+        </div>
 
         <!-- Contenedor principal (Video y Datos) --><div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 
@@ -104,6 +111,19 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             
+            // --- Registro del Service Worker (PWA) ---
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('sw.js') // Busca el archivo sw.js
+                        .then(registration => {
+                            console.log('Service Worker registrado con éxito:', registration);
+                        })
+                        .catch(error => {
+                            console.log('Error al registrar el Service Worker:', error);
+                        });
+                });
+            }
+
             // --- VARIABLES DE LA API DE GEMINI ---
             // Dejada en blanco como "" para que el entorno de Canvas la proporcione
             const apiKey = ""; 
@@ -297,4 +317,3 @@
 
 </body>
 </html>
-
