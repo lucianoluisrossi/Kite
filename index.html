@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Bajada</title>
+    <!-- Importa Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Fuente Inter de Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        <!-- Título de la APP -->
+        <h1 class="text-3xl md:text-5xl font-bold text-center mb-8 text-white">
+            La Bajada
+        </h1>
+
+        <!-- Contenedor principal (Video y Datos) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+
+            <!-- Columna del Video (ocupa 2/3 en pantallas grandes) -->
+            <div class="lg:col-span-2 bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
+                <!-- El iframe del video se hace responsivo -->
+                <!-- Añadí autoplay=1&mute=1 para que inicie automáticamente (requiere silencio) -->
+                <iframe 
+                    class="w-full aspect-video" 
+                    src="https://www.youtube.com/embed/QWo36gCzZEo?si=hftjioeg4y-dP4FT&autoplay=1&mute=1" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    referrerpolicy="strict-origin-when-cross-origin" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+
+            <!-- Columna de Datos del Clima (ocupa 1/3 en pantallas grandes) -->
+            <div class="bg-gray-800 p-6 rounded-xl shadow-2xl flex flex-col h-full">
+                <h2 class="text-2xl font-semibold mb-5 text-white border-b border-gray-700 pb-3">
+                    Datos en Vivo
+                </h2>
+                
+                <!-- Contenedor para los datos -->
+                <ul class="space-y-4 text-lg">
+                    <!-- Temperatura -->
+                    <li class="flex justify-between items-center">
+                        <span class="text-gray-400">Temperatura:</span>
+                        <span class="text-xl font-bold text-white" id="temp-data">
+                            Cargando...
+                        </span>
+                    </li>
+                    
+                    <!-- Humedad -->
+                    <li class="flex justify-between items-center">
+                        <span class="text-gray-400">Humedad:</span>
+                        <span class="text-xl font-bold text-white" id="humidity-data">
+                            Cargando...
+                        </span>
+                    </li>
+                    
+                    <!-- Viento -->
+                    <li class="flex justify-between items-center">
+                        <span class="text-gray-400">Viento:</span>
+                        <span class="text-xl font-bold text-white" id="wind-data">
+                            Cargando...
+                        </span>
+                    </li>
+
+                    <!-- Presión -->
+                     <li class="flex justify-between items-center">
+                        <span class="text-gray-400">Presión:</span>
+                        <span class="text-xl font-bold text-white" id="pressure-data">
+                            Cargando...
+                        </span>
+                    </li>
+                </ul>
+
+                <!-- Mensaje de Error (oculto por defecto) -->
+                <div id="error-message" class="hidden mt-6 p-4 bg-red-800 text-red-100 rounded-lg text-center">
+                    Error al cargar los datos del clima.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // URL original de la API
+            const originalApiUrl = 'https://api.ecowitt.net/api/v3/device/real_time?application_key=515398061FDA504607F0329996375FC2&api_key=2b181909-3bd1-4a8f-8cf1-91cb95e75ff5&mac=C8:C9:A3:1C:0D:E5&call_back=all';
+            
+            // --- NOTA IMPORTANTE SOBRE CORS ---
+            // Las llamadas a API directas desde un navegador (como en este HTML)
+            // a menudo son bloqueadas por la política CORS del servidor de la API.
+            // Para solucionarlo, usamos un proxy CORS gratuito (allorigins.win)
+            // que añade los encabezados correctos.
+            const proxiedApiUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(originalApiUrl)}`;
+
+            // Elementos del DOM donde mostraremos los datos
+            const tempEl = document.getElementById('temp-data');
+            const humidityEl = document.getElementById('humidity-data');
+            const windEl = document.getElementById('wind-data');
+            const pressureEl = document.getElementById('pressure-data');
+            const errorEl = document.getElementById('error-message');
+
+            // Función para obtener y mostrar los datos
+            async function fetchWeatherData() {
+                try {
+                    const response = await fetch(proxiedApiUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error de red: ${response.status}`);
+                    }
+
+                    const json = await response.json();
+
+                    // Verificamos si la API devolvió datos exitosos
+                    if (json.code === 0 && json.data) {
+                        const data = json.data;
+
+                        // Extraemos los datos que nos interesan
+                        // Usamos 'temp_out' (exterior) si existe, si no 'temp_in' (interior)
+                        const temp = data.temp_out || data.temp_in;
+                        const humidity = data.humidity_out || data.humidity_in;
+                        const windSpeed = data.wind_speed;
+                        const windDir = data.wind_direction;
+                        // 'pressure_relative' (relativa) suele ser más útil que 'pressure_absolute'
+                        const pressure = data.pressure_relative || data.pressure_absolute; 
+
+                        // Actualizamos el HTML (con encadenamiento opcional ?. para seguridad)
+                        tempEl.textContent = temp ? `${temp.value} ${temp.unit_desc}` : 'N/A';
+                        humidityEl.textContent = humidity ? `${humidity.value} ${humidity.unit_desc}` : 'N/A';
+                        pressureEl.textContent = pressure ? `${pressure.value} ${pressure.unit_desc}` : 'N/A';
+                        
+                        // Combinamos velocidad y dirección del viento
+                        if (windSpeed && windDir) {
+                            windEl.textContent = `${windSpeed.value} ${windSpeed.unit_desc} (${windDir.value}${windDir.unit_desc})`;
+                        } else if (windSpeed) {
+                            windEl.textContent = `${windSpeed.value} ${windSpeed.unit_desc}`;
+                        } else {
+                            windEl.textContent = 'N/A';
+                        }
+                        
+                        // Ocultamos cualquier error previo
+                        errorEl.classList.add('hidden');
+
+                    } else {
+                        // La API devolvió un error (ej. API key incorrecta)
+                        throw new Error(json.msg || 'Formato de datos incorrecto');
+                    }
+
+                } catch (error) {
+                    console.error('Error al obtener datos del clima:', error);
+                    errorEl.textContent = `Error: No se pudieron cargar los datos. (${error.message})`;
+                    errorEl.classList.remove('hidden');
+                    // Mostramos 'N/A' en los campos si hay error
+                    tempEl.textContent = 'N/A';
+                    humidityEl.textContent = 'N/A';
+                    windEl.textContent = 'N/A';
+                    pressureEl.textContent = 'N/A';
+                }
+            }
+
+            // Llamamos a la función al cargar la página
+            fetchWeatherData();
+
+            // Opcional: Actualizar los datos cada 5 minutos (300000 ms)
+            setInterval(fetchWeatherData, 300000);
+        });
+    </script>
+
+</body>
+</html>
