@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>La Bajada</title>
     
-    <!-- Meta PWA: Color de la barra de título del navegador -->
-    <meta name="theme-color" content="#1f2937">
-    <!-- Meta PWA: Enlace al Manifest -->
-    <link rel="manifest" href="manifest.json">
+    <!-- Meta PWA: Color de la barra de título del navegador --><meta name="theme-color" content="#1f2937">
+    <!-- Meta PWA: Enlace al Manifest --><link rel="manifest" href="manifest.json">
 
     <!-- Importa Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -30,9 +28,12 @@
 <body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
-        <!-- Título de la APP --><h1 class="text-3xl md:text-5xl font-bold text-center mb-8 text-white">
+        <!-- Título de la APP --><h1 class="text-3xl md:text-5xl font-bold text-center mb-4 text-white">
             La Bajada
         </h1>
+        <!-- Logo de la APP --><div class="flex justify-center mb-8">
+            <img src="logo.png" alt="Logo de La Bajada" class="h-24 md:h-32 w-auto">
+        </div>
 
         <!-- Contenedor principal (Video y Datos) --><div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
 
@@ -54,7 +55,7 @@
                 </h2>
                 
                 <!-- Contenedor para los datos --><ul class="space-y-4 text-lg">
-                    <!-- ... (elementos li de temperatura, humedad, etc. sin cambios) --><!-- Temperatura --><li class="flex justify-between items-center">
+                    <!-- ... (elementos li de temperatura, humedad, etc. sin cambios) ... --><!-- Temperatura --><li class="flex justify-between items-center">
                         <span class="text-gray-400">Temperatura:</span>
                         <span class="text-xl font-bold text-white" id="temp-data">
                             Cargando...
@@ -129,9 +130,8 @@
             const geminiApiUrl = `https://generativelan-h825039400.scf.usercontent.goog/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
             // --- VARIABLES DE LA API DEL CLIMA ---
-            const originalApiUrl = 'https://api.ecowitt.net/api/v3/device/real_time?application_key=515398061FDA504607F0329996375FC2&api_key=2b181909-3bd1-4a8f-8cf1-91cb95e75ff5&mac=C8:C9:A3:1C:0D:E5&call_back=all&temp_unitid=1&pressure_unitid=5&wind_speed_unitid=8&rainfall_unitid=12&solar_irradiance_unitid=14&capacity_unitid=25';
-            // CAMBIO: Se usa un proxy CORS diferente y más confiable.
-            const proxiedApiUrl = `https://corsproxy.io/?${encodeURIComponent(originalApiUrl)}`;
+            // Esta es la ruta local que Vercel reescribirá (ver vercel.json)
+            const weatherApiUrl = '/api/weather';
 
             // --- ELEMENTOS DEL DOM (Clima) ---
             const tempEl = document.getElementById('temp-data');
@@ -158,20 +158,17 @@
                     if (!response.ok) {
                         // Si es un error del servidor (5xx) o 'too many requests' (429), reintenta
                         if ((response.status >= 500 || response.status === 429) && retries > 0) {
-                            console.log(`Reintentando... ${retries} intentos restantes.`);
                             await new Promise(res => setTimeout(res, delay));
                             return fetchWithBackoff(url, options, retries - 1, delay * 2);
                         }
                         throw new Error(`Error de red: ${response.status} ${response.statusText}`);
                     }
-                    return response.json(); // Devuelve el JSON directamente
+                    return response.json();
                 } catch (error) {
                     if (retries > 0) {
-                        console.log(`Reintentando por error... ${retries} intentos restantes.`);
                         await new Promise(res => setTimeout(res, delay));
                         return fetchWithBackoff(url, options, retries - 1, delay * 2);
                     }
-                    console.error('Error final de fetch:', error);
                     throw error;
                 }
             }
@@ -183,8 +180,8 @@
                 currentWeatherData = null; // Limpiar datos antiguos
 
                 try {
-                    // CAMBIO: Ahora usamos fetchWithBackoff para la API del clima también.
-                    const json = await fetchWithBackoff(proxiedApiUrl);
+                    // Ahora llamamos a nuestra ruta local, Vercel se encarga del resto.
+                    const json = await fetchWithBackoff(weatherApiUrl);
 
                     if (json.code === 0 && json.data) {
                         const data = json.data;
@@ -282,7 +279,6 @@
                 };
 
                 try {
-                    // Usamos fetchWithBackoff para Gemini
                     const result = await fetchWithBackoff(geminiApiUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -320,5 +316,4 @@
 
 </body>
 </html>
-
 
